@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: urukais-backend
+    runtime: docker
+    repo: https://github.com/urukaisk-maker/Grande-urukais.git
+    rootDir: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: urukais-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: urukais-db
+          property: port
+      - key: DATABASE_USER
+        fromDatabase:
+          name: urukais-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: urukais-db
+          property: password
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: urukais-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 15m
+      - key: JWT_REFRESH_EXPIRATION
+        value: 7d
+      - key: CORS_ORIGIN
+        value: https://admin-urukais.vercel.app
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+    disk:
+      name: uploads
+      mountPath: /app/uploads
+      sizeGB: 1
+
+databases:
+  - name: urukais-db
+    databaseName: urukais_db
+    user: urukais
+    plan: free
