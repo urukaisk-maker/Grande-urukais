@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     restart: always
     environment:
       POSTGRES_USER: ${DATABASE_USER:-urukais}
@@ -28,23 +28,19 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${DATABASE_USER:-urukais}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-urukais_secret}
-      DATABASE_NAME: ${DATABASE_NAME:-urukais_db}
+      API_PREFIX: api/v1
+      DATABASE_URL: postgresql://${DATABASE_USER:-urukais}:${DATABASE_PASSWORD:-urukais_secret}@postgres:5432/${DATABASE_NAME:-urukais_db}?schema=public
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION: 15m
-      JWT_REFRESH_EXPIRATION: 7d
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: 7d
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-    volumes:
-      - uploads_data:/app/uploads
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres_data:
-  uploads_data:

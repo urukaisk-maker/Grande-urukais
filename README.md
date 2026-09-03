@@ -84,18 +84,21 @@ Eso inicia PostgreSQL, Redis y RabbitMQ localmente.
 ```bash
 cd backend
 npm install
+# Copia .env.example a .env y ajusta los valores
+cp .env.example .env
+# Crea la base de datos y aplica migraciones
+npx prisma migrate dev --name init
+# Inserta datos iniciales (categorías, productos, usuario demo)
+npx prisma db seed
+# Inicia el servidor en modo desarrollo
 npm run start:dev
 ```
 
-### Admin Panel (Next.js)
+La API estará disponible en `http://localhost:3000/api/v1`.
 
-```bash
-cd admin
-npm install
-npm run dev
-```
+Documentación Swagger en `http://localhost:3000/api/v1/docs`.
 
-Abre `http://localhost:3001` en el navegador. Se conecta automáticamente al backend NestJS en `localhost:3000`.
+**Usuario demo:** `demo@urukaisklick.com` / `password123`
 
 ### Frontend Mobile (Flutter)
 
