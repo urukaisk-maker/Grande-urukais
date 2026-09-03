@@ -33,7 +33,7 @@ export default function NewProductPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/admin/products', {
+      const res = await api.post('/admin/products', {
         name: form.name,
         description: form.description,
         price: parseFloat(form.price),
@@ -41,8 +41,8 @@ export default function NewProductPage() {
         isActive: form.isActive,
         categoryId: form.categoryId,
       });
-      toast.success('Producto creado');
-      router.push('/products');
+      toast.success('Producto creado. Ahora puedes añadir imágenes.');
+      router.push(`/products/${res.data.id}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al crear producto');
       setSaving(false);

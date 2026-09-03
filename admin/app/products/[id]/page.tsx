@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import type { Product, Category } from '@/lib/types';
+import type { Product, Category, ProductImage } from '@/lib/types';
 import AdminLayout from '@/components/layout/admin-layout';
+import ImageUploader from '@/components/products/image-uploader';
 import { toast } from 'sonner';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, ImageIcon } from 'lucide-react';
 
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [product, setProduct] = useState<Product | null>(null);
+  const [images, setImages] = useState<ProductImage[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -32,6 +34,7 @@ export default function EditProductPage() {
     ]).then(([prodRes, catRes]) => {
       const p = prodRes.data;
       setProduct(p);
+      setImages(p.images || []);
       setForm({
         name: p.name,
         description: p.description,
@@ -153,6 +156,19 @@ export default function EditProductPage() {
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </form>
+      </div>
+
+      {/* Image Upload Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl mt-6">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+          <ImageIcon className="w-5 h-5 text-primary-600" />
+          Imágenes del producto
+        </h2>
+        <ImageUploader
+          productId={params.id as string}
+          images={images}
+          onImagesChange={setImages}
+        />
       </div>
     </AdminLayout>
   );
