@@ -13,5 +13,5 @@ module.exports = {
   },
   collectCoverageFrom: ['src/**/*.ts'],
   coverageDirectory: './coverage',
-  setupFilesAfterEach: ['<rootDir>/test/setup-e2e.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup-e2e.ts'],
 };

@@ -1,7 +1,8 @@
-import { Controller, Post, Req, RawBodyRequest, Headers, BadRequestException, Logger } from '@nestjs/common';
+import { Controller, Post, Req, RawBodyRequest, BadRequestException, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
+import { MessagingService } from '../../infrastructure/messaging/messaging.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
@@ -13,6 +14,7 @@ export class PaymentsController {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private messaging: MessagingService,
   ) {}
 
   @Public()
@@ -54,7 +56,7 @@ export class PaymentsController {
           where: { providerPaymentId: paymentIntent.id },
         });
 
-        if (payment) {
+        if (payment && payment.status !== 'COMPLETED') {
           await this.prisma.payment.update({
             where: { id: payment.id },
             data: { status: 'COMPLETED' },
@@ -64,6 +66,15 @@ export class PaymentsController {
             where: { id: payment.orderId },
             data: { status: 'PAID' },
           });
+
+          await this.messaging.publish({
+            type: 'payment.completed',
+            payload: { paymentId: payment.id, orderId: payment.orderId, amount: payment.amount },
+          });
+
+          this.logger.log(`Payment completed for order ${payment.orderId}`);
+        } else if (payment?.status === 'COMPLETED') {
+          this.logger.log(`Payment ${paymentIntent.id} already processed — idempotency check`);
         }
         break;
       }
@@ -73,11 +84,18 @@ export class PaymentsController {
           where: { providerPaymentId: paymentIntent.id },
         });
 
-        if (payment) {
+        if (payment && payment.status !== 'FAILED') {
           await this.prisma.payment.update({
             where: { id: payment.id },
             data: { status: 'FAILED' },
           });
+
+          await this.messaging.publish({
+            type: 'payment.failed',
+            payload: { paymentId: payment.id, orderId: payment.orderId, amount: payment.amount },
+          });
+
+          this.logger.warn(`Payment failed for order ${payment.orderId}`);
         }
         break;
       }

@@ -131,6 +131,31 @@ export default function OrderDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Payments */}
+          {order.payments && order.payments.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Pagos</h3>
+              <div className="space-y-2">
+                {order.payments.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold px-2 py-1 rounded bg-gray-200 text-gray-700">{payment.provider}</span>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                        payment.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        payment.status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>{payment.status}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">{formatCurrency(payment.amount)}</p>
+                      <p className="text-xs text-gray-400 uppercase">{payment.currency}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>
