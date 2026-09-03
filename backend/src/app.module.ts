@@ -10,6 +10,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { HealthModule } from './modules/health/health.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
@@ -28,6 +29,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
     OrdersModule,
     PaymentsModule,
     HealthModule,
+    AdminModule,
   ],
   providers: [
     {

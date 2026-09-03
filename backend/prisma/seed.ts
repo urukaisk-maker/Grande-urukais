@@ -233,9 +233,25 @@ async function main() {
   });
 
   console.log(`  ✅ Usuario demo creado: ${user.email}`);
+
+  // ─── Admin User ──────────────────────────────────────
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@urukaisklick.com' },
+    update: {},
+    create: {
+      email: 'admin@urukaisklick.com',
+      password: adminPassword,
+      firstName: 'Admin',
+      lastName: 'Urukais',
+      role: 'ADMIN',
+    },
+  });
+
+  console.log(`  ✅ Usuario admin creado: ${admin.email}`);
   console.log('\n🎉 Seed completado!');
-  console.log('   Email: demo@urukaisklick.com');
-  console.log('   Password: password123');
+  console.log('   Demo: demo@urukaisklick.com / password123');
+  console.log('   Admin: admin@urukaisklick.com / admin123');
 }
 
 main()
