@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
+import { MessagingService } from '../../infrastructure/messaging/messaging.service';
 import { CheckoutDto } from './dto/orders.dto';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 
@@ -11,6 +12,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private messaging: MessagingService,
   ) {}
 
   async checkout(user: AuthUser | undefined, dto: CheckoutDto) {
@@ -38,6 +40,9 @@ export class OrdersService {
       },
       include: { items: true },
     });
+
+    // Publish order.created event
+    await this.messaging.publishOrderCreated(order.id, total, dto.customerEmail);
 
     // Create payment record with Stripe
     const stripeSecretKey = this.config.get<string>('app.stripe.secretKey');

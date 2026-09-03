@@ -11,6 +11,8 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { StorageService } from '../../infrastructure/storage/storage.service';
+import { PresignUploadDto } from '../../infrastructure/storage/storage.service';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Admin')
@@ -19,7 +21,10 @@ import { UserRole } from '@prisma/client';
 @Roles(UserRole.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private adminService: AdminService) {}
+  constructor(
+    private adminService: AdminService,
+    private storage: StorageService,
+  ) {}
 
   // ─── Stats ────────────────────────────────────────────
 
@@ -145,5 +150,31 @@ export class AdminController {
   @ApiOperation({ summary: 'Eliminar reseña' })
   async deleteReview(@Param('id') id: string) {
     return this.adminService.deleteReview(id);
+  }
+
+  // ─── Uploads (S3) ────────────────────────────────────
+
+  @Post('uploads/presign')
+  @ApiOperation({ summary: 'Generar URL presignada para subir imagen a S3' })
+  async presignUpload(@Body() dto: PresignUploadDto) {
+    return this.storage.generatePresignedUploadUrl(dto.contentType, dto.fileExtension);
+  }
+
+  @Post('products/:id/images')
+  @ApiOperation({ summary: 'Asociar imagen a producto tras subir a S3' })
+  async addProductImage(
+    @Param('id') id: string,
+    @Body() body: { url: string; order?: number },
+  ) {
+    return this.adminService.addProductImage(id, body.url, body.order || 0);
+  }
+
+  @Delete('products/:id/images/:imageId')
+  @ApiOperation({ summary: 'Eliminar imagen de producto' })
+  async deleteProductImage(
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.adminService.deleteProductImage(id, imageId);
   }
 }

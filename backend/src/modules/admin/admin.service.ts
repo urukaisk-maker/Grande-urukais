@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { RedisCacheService } from '../../infrastructure/redis/redis-cache.service';
+import { MessagingService } from '../../infrastructure/messaging/messaging.service';
 import {
   CreateCategoryDto,
   UpdateCategoryDto,
@@ -12,7 +14,11 @@ import { UserRole, OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: RedisCacheService,
+    private messaging: MessagingService,
+  ) {}
 
   // ─── Stats ────────────────────────────────────────────
 
@@ -61,19 +67,25 @@ export class AdminService {
   }
 
   async createCategory(dto: CreateCategoryDto) {
-    return this.prisma.category.create({ data: dto });
+    const category = await this.prisma.category.create({ data: dto });
+    await this.cache.invalidateCatalog();
+    return category;
   }
 
   async updateCategory(id: string, dto: UpdateCategoryDto) {
     const exists = await this.prisma.category.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Categoría no encontrada');
-    return this.prisma.category.update({ where: { id }, data: dto });
+    const category = await this.prisma.category.update({ where: { id }, data: dto });
+    await this.cache.invalidateCatalog();
+    return category;
   }
 
   async deleteCategory(id: string) {
     const exists = await this.prisma.category.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Categoría no encontrada');
-    return this.prisma.category.delete({ where: { id } });
+    const category = await this.prisma.category.delete({ where: { id } });
+    await this.cache.invalidateCatalog();
+    return category;
   }
 
   // ─── Products CRUD ───────────────────────────────────
@@ -109,26 +121,34 @@ export class AdminService {
   }
 
   async createProduct(dto: CreateProductDto) {
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: dto,
       include: { category: true },
     });
+    await this.cache.invalidateCatalog();
+    await this.messaging.publishProductCreated(product.id, product.name);
+    return product;
   }
 
   async updateProduct(id: string, dto: UpdateProductDto) {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Producto no encontrado');
-    return this.prisma.product.update({
+    const product = await this.prisma.product.update({
       where: { id },
       data: dto,
       include: { category: true },
     });
+    await this.cache.invalidateCatalog();
+    await this.messaging.publishProductUpdated(product.id, product.name);
+    return product;
   }
 
   async deleteProduct(id: string) {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Producto no encontrado');
-    return this.prisma.product.delete({ where: { id } });
+    const product = await this.prisma.product.delete({ where: { id } });
+    await this.cache.invalidateCatalog();
+    return product;
   }
 
   // ─── Orders ──────────────────────────────────────────
@@ -166,11 +186,13 @@ export class AdminService {
   async updateOrderStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Pedido no encontrado');
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status: dto.status as OrderStatus },
       include: { items: true },
     });
+    await this.messaging.publishOrderStatusUpdated(id, dto.status);
+    return updated;
   }
 
   // ─── Users ───────────────────────────────────────────
@@ -231,5 +253,23 @@ export class AdminService {
     const review = await this.prisma.review.findUnique({ where: { id } });
     if (!review) throw new NotFoundException('Reseña no encontrada');
     return this.prisma.review.delete({ where: { id } });
+  }
+
+  // ─── Product Images (S3) ──────────────────────────────
+
+  async addProductImage(productId: string, url: string, order: number) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    return this.prisma.productImage.create({
+      data: { productId, url, order },
+    });
+  }
+
+  async deleteProductImage(productId: string, imageId: string) {
+    const image = await this.prisma.productImage.findUnique({ where: { id: imageId } });
+    if (!image || image.productId !== productId) {
+      throw new NotFoundException('Imagen no encontrada');
+    }
+    return this.prisma.productImage.delete({ where: { id: imageId } });
   }
 }
